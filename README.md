@@ -1,16 +1,90 @@
-## Lane Detection with Vector Fields based on BiSeNetv2 
+## Ego-Lane Detection with Vector Fields 
+This repository has been designed for the Carolo-Cup context.
+The goal was to **predict the left marking of the ego-lane**
+which usually corresponds to the center marking of the road.
+Since the Carolo-Cup provides a strictly defined competition environment,
+it is always clear where to go from any image, so that the network
+has been set up to learn any turns from context.
+
+The image undergoes a perspective transform (IPM) prior to the neural network,
+so that it looks like a bird's eye view.
+**The position of the car always corresponds to the bottom center of the image**.
+In the example image below, the predicted vector field
+is visualized by the red arrows.
+![img_1.png](img_1.png)
+
+### Idea
+Generally, the idea is to let the network predict a vector field 
+with an attractor basin in order to describe lane markings.
+The advantage of this vector field form of representation is
+that it aligns well with the spatial data structure of the images -- this 
+simplifies the task to be learned.
+For further work, this project could also be interesting for predicting 3D trajectories
+from point clouds or when depth information is available.
+
+### Architecture
+Since useful semantics are expected to be learned by a semantic segmentation, 
+the network BiSeNetV2 has been chosen as a **backbone** for this lane detection
+network.
+BiSeNetV2 has been chosen over alternatives due to its low inference time.
+
+The main output is the vector field (VF) that represents the basin for the
+center marking of the road.
+The actual vector field results from a linear interpolation of a tensor.
+As it can be seen from the examples, a low resolution of 12x20 can still produce
+detailed vector fields thanks to the interpolation. This allows to work 
+with fairly low resolutions and thus highly contextual layers.
+
+A second vector field (DF) is used to predict the driving direction.
+A third output is used to grade the visibility conditions on the image
+(yet to be improved).
+
+Input image resolution: 320x192.
+![img_2.png](img_2.png)
 
 
+### Vector Field Parsing
+#### (Extraction of the lane marking geometry from the vector field)
+This is done using iterative vector field integration with momentum.
+Since the car position corresponds to the bottom center,
+the integration can start from there. 
+In practice, it is advisable to perform the integration on the CPU
+due to its iterative nature.
 
-## How to train (English TBD)
+The integration algorithm works by alternating 
+_integration steps_ (white) and _correction steps_ (magenta).
+The green line is the final lane marking shape.
+![img_3.png](img_3.png)
+
+
+### Loss
+Due to its iterative and somewhat recursive nature, it is impractical to use
+the ground truth lane marking curves directly as labels.
+Furthermore, it is sub-optimal to generate references for the vector field
+tensor, as there is not necessarily a correct value for the cells
+far from the lane.
+
+So, the idea is to train the network exactly for what it should do in the end:
+**Train for correction steps** of the integration algorithm.
+
+The ground truth is available in the form of an equidistantly sampled line.
+1. Starting from the ground truth (blue), perturb points randomly.
+2. Let the network perform correction steps (green).
+3. Ideally, the corrections should have landed on the blue line. Everything else
+is an error that should contribute to the loss function (so: red lines are errors).
+
+![img_4.png](img_4.png)
+
+
+### How to use the code (English translation is to be done)
 
 ### Workflow
 
 1. Training der Segmentierung
     - Learning Rate Range Test nicht vergessen: Alle anderen Hyper-Parameter einstellen, dann als `--lr_scheduler lr_range_test` angeben. 
     Dauert ein paar Minuten.
-    Dann das Diagramm `lr_range_test.svg` im angegebenen log Ordner bewundern (x: Learning Rate, y: Loss) und überlegen, 
-    welche LR maximal gewählt werden kann, damit wir noch konvergieren (möglichst ein Wert kurz vor dem Minimum im Diagramm).
+    Dann das Diagramm `lr_range_test.svg` im angegebenen log Ordner anschauen (x: Learning Rate, y: Loss) und überlegen, 
+    welche LR maximal gewählt werden kann, damit das Training noch konvergiert (möglichst ein Wert kurz vor dem Minimum im Diagramm).
     - Danach `--lr_scheduler 1cycle` oder `--lr_scheduler warmup_poly` wieder einstellen 
 2. Training der Spurerkennung mit der segmentation checkpoint als Initialisierung (wird gefreezed)
     - LR range test auch hier nicht vergessen
