@@ -11,7 +11,7 @@ so that it looks like a bird's eye view.
 **The position of the car always corresponds to the bottom center of the image**.
 In the example image below, the predicted vector field
 is visualized by the red arrows.
-![img_1.png](img_1.png)
+![img_1.png](doc/img_1.png)
 
 ### Idea
 Generally, the idea is to let the network predict a vector field 
@@ -40,7 +40,7 @@ A third output is used to grade the visibility conditions on the image
 (yet to be improved).
 
 Input image resolution: 320x192.
-![img_2.png](img_2.png)
+![img_2.png](doc/img_2.png)
 
 
 ### Vector Field Parsing
@@ -54,7 +54,7 @@ due to its iterative nature.
 The integration algorithm works by alternating 
 _integration steps_ (white) and _correction steps_ (magenta).
 The green line is the final lane marking shape.
-![img_3.png](img_3.png)
+![img_3.png](doc/img_3.png)
 
 
 ### Loss
@@ -73,7 +73,7 @@ The ground truth is available in the form of an equidistantly sampled line.
 3. Ideally, the corrections should have landed on the blue line. Everything else
 is an error that should contribute to the loss function (so: red lines are errors).
 
-![img_4.png](img_4.png)
+![img_4.png](doc/img_4.png)
 
 
 ### How to use the code (English translation is to be done)
