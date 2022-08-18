@@ -1,0 +1,10 @@
+.idea/
+venv/
+runs/
+log*/
+*.pyc
+*.pt
+*.pth
+*.png
+hyper_params.json
+status.json

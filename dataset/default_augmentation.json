@@ -1,0 +1,6 @@
+{
+  "viz_aug": 0.3,
+  "tf_px_max": 70,
+  "tf_px_noise": 10,
+  "lane_mask_for_seg_train": false
+}
